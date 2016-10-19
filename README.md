@@ -22,26 +22,84 @@ Or install it yourself as:
 
 ## Usage
 
-Create config/initializers/redis_app_join.rb or place this in environment specific config file
+Create config/initializers/redis_app_join.rb or place this in environment specific config file.  You can use a different namespace, DB, driver, etc.  
 
 ```ruby
 redis_conn = Redis.new(host: 'localhost', port: 6379, db: 0)
-REDIS_APP_JOIN = Redis::Namespace.new(:codecov, redis: redis_conn)
+REDIS_APP_JOIN = Redis::Namespace.new(:appjoin, redis: redis_conn)
 ```
 
-In the Ruby class where you need to implement application-side join add this:
+In the Ruby class where you need to implement application-side join add `include RedisAppJoin`.  Here is a sample report generator that will produce a report of comments created since yesterday and include associated article title and name of user who wrote the article.
 
 ```ruby
+class ReportGen
 include RedisAppJoin
-# as you are looping through records call 
-cache_join_data(record)
+  def perform
+    comments = Comment.gte(created_at: Date.yesterday).only(:body, :article_id)
+    cache_records(records: comments)
+    comment_ids = comments.pluck(:id)
+    # =>
+    # => we also could have done  comments.pluck(:article_id)
+    article_ids = fetch_records_field(record_class: 'Comment', record_ids: comment_ids, field: 'article_id')
+    articles = Article.in(id: article_ids).only(:title, :user_id)
+    cache_records(records: articles)
+    # =>
+    user_ids = fetch_records_field(record_class: 'Article', record_ids: article_ids, field: 'user_id')
+    users = User.in(id: user_ids).only(:name)
+    cache_records(records: users)
+    # => instead of using cached comments we just query DB again
+    cached_comments = fetch_records(record_class: 'Comment', record_ids: comment_ids)
+    cached_comments.each do |comment|
+      article = fetch_records(record_class: 'Article', record_ids: [comment.article_id]).first
+      user = fetch_records(record_class: 'User', record_ids: [article.user_id]).first
+      puts [comment.body, article.title, user.name].join(',')
+    end
+    delete_records(records: comments + articles + users)
+  end
+end
 ```
+
+`cache_records` expects an array of [ActiveModels](http://api.rubyonrails.org/classes/ActiveModel/Model.html).  It will loop through them creating keys using combination of class and ID.  Hash value will be record's attributes.  
+
+`delete_records` expects an array ActiveModels.  You can pass different types of records (users and articles) in the same method call.  
+
+`fetch_records` expects class name and array of IDs.  It will return an array of objects and include the original record ID as one of the attributes for each object.  
+
+`fetch_records_field` expects class name, array of IDs and the field name you want.  It will return an array of values for that feild.
+
+Data in Redis will be stored like this:
+
+```ruby
+{"db":0,"key":"appjoin:Comment:id1","ttl":-1,"type":"hash","value":{"body":"body 1","article_id":"id1"},...}
+{"db":0,"key":"appjoin:Comment:id2","ttl":-1,"type":"hash","value":{"body":"body 2","article_id":"id2"},...}
+...
+{"db":0,"key":"appjoin:Article:id1","ttl":-1,"type":"hash","value":{"title":"title 1","user_id":"id1"},...}
+{"db":0,"key":"appjoin:Article:id2","ttl":-1,"type":"hash","value":{"title":"title 2","user_id":"id2"},...}
+...
+{"db":0,"key":"appjoin:User:id1","ttl":-1,"type":"hash","value":{"name":"user 1"}, ...}
+{"db":0,"key":"appjoin:User:id2","ttl":-1,"type":"hash","value":{"name":"user 2"}, ...}
+```
+
+Comment, Article and User records will be returned like this.  
+
+```ruby
+# comment
+<OpenStruct article_id="id1", body="body 1", id="id1">
+# article
+<OpenStruct user_id="id1", title="title 1", id="id1">
+# user
+<OpenStruct name="user 1", id="id1">
+```
+
+You can do `article.title` and `user = fetch_records(record_class: 'User', record_ids: [article.user_id]).first`.
 
 ### TODO:
 
-implment methods to cache, fetch and delete records
+Write tests
 
-write tests
+Support non-string fields.  For example, if your DB supports array fields you cannot store those attributes in Redis hash values.  
+
+Methods to fetch associated records so we can do `article.user.name` from Redis cache.
 
 ## Development
 
@@ -51,5 +109,4 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/redis_app_join.
-
+Bug reports and pull requests are welcome on GitHub at https://github.com/dmitrypol/redis_app_join.
