@@ -33,7 +33,7 @@ In the Ruby class where you need to implement application-side join add `include
 
 ```ruby
 class ReportGen
-include RedisAppJoin
+  include RedisAppJoin
   def perform
     comments = Comment.gte(created_at: Date.yesterday).only(:body, :article_id)
     cache_records(records: comments)
@@ -47,7 +47,7 @@ include RedisAppJoin
     user_ids = fetch_records_field(record_class: 'Article', record_ids: article_ids, field: 'user_id')
     users = User.in(id: user_ids).only(:name)
     cache_records(records: users)
-    # => instead of using cached comments we just query DB again
+    # => instead of using cached comments we could query DB again
     cached_comments = fetch_records(record_class: 'Comment', record_ids: comment_ids)
     cached_comments.each do |comment|
       article = fetch_records(record_class: 'Article', record_ids: [comment.article_id]).first
@@ -58,14 +58,6 @@ include RedisAppJoin
   end
 end
 ```
-
-`cache_records` expects an array of [ActiveModels](http://api.rubyonrails.org/classes/ActiveModel/Model.html).  It will loop through them creating keys using combination of class and ID.  Hash value will be record's attributes.  
-
-`delete_records` expects an array ActiveModels.  You can pass different types of records (users and articles) in the same method call.  
-
-`fetch_records` expects class name and array of IDs.  It will return an array of objects and include the original record ID as one of the attributes for each object.  
-
-`fetch_records_field` expects class name, array of IDs and the field name you want.  It will return an array of values for that feild.
 
 Data in Redis will be stored like this:
 
@@ -96,6 +88,10 @@ You can do `article.title` and `user = fetch_records(record_class: 'User', recor
 ### TODO:
 
 Write tests
+
+Default TTL of 1.week
+
+Support JSON structures in caching (getting data from API), not just ActiveModels
 
 Support non-string fields.  For example, if your DB supports array fields you cannot store those attributes in Redis hash values.  
 

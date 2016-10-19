@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["dmitrypol@gmail.com"]
 
   spec.summary       = %q{Uses Redis to cache data for application-side joins.}
-  spec.description   = %q{Instead of building your own data structures why not use Redis Hashes.}
+  spec.description   = %q{Uses Redis hashes to cache data for application-side joins instead of building internal own data structures.}
   spec.homepage      = "https://github.com/dmitrypol/redis_app_join"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
