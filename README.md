@@ -102,14 +102,14 @@ class DataDownloader
   end
 end
 # => here is my profile https://api.github.com/users/dmitrypol
-{"db":0,"key":"appjoin:Github:210308","ttl":-1,"type":"hash","value":{"name":"Dmitry Polyakovsky","bio":"...","location":"..."}}
+{"db":0,"key":"appjoin:Github:210308","ttl":-1,"type":"hash","value":{"name":"...","bio":"...","location":"..."}}
 ```
 
-When you delete such records you need `delete_records(records: users, record_class: 'User')`.  
+When you delete such records you need to `delete_records(records: profiles, record_class: 'Github')`.  
 
 ### Other config options
 
-If you do not call 'delete_records` after you are done all data cached in Redis will expire in 1 week.  Set `REDIS_APP_JOIN_TTL = 1.day` to modify this behavior.  Or set `REDIS_APP_JOIN_TTL = -1` to not expire records.
+If you do not call `delete_records` after you are done all data cached in Redis will expire in 1 week.  Set `REDIS_APP_JOIN_TTL = 1.day` to modify this behavior.  Or set `REDIS_APP_JOIN_TTL = -1` to not expire records.
 
 The gem uses [Redis pipelining](http://redis.io/topics/pipelining) in default batches of 100.  To change that set `REDIS_APP_JOIN_BATCH = 1000` in your initializer.
 
