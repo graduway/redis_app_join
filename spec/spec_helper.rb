@@ -5,4 +5,6 @@ require 'byebug'
 require 'mock_redis'
 require 'net/http'
 
-REDIS_APP_JOIN = Redis::Namespace.new(:appjoin, redis: MockRedis.new )
+#REDIS_APP_JOIN = Redis::Namespace.new(:appjoin, redis: MockRedis.new )   # => problems with pipelining
+REDIS_APP_JOIN = Redis::Namespace.new(:appjoin, redis: Redis.new )
+REDIS_APP_JOIN_BATCH = 1

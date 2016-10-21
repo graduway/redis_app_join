@@ -1,6 +1,6 @@
 # RedisAppJoin
 
-Sometimes we need to implement application level joins.  It is easy to query User table and get list of user_ids and then query the child record table for records that belong to those users.  But what if we need to combine data attributes from both tables?  This can also be a use case when querying mutliple databases or 3rd party APIs.  
+Sometimes you need to implement application level joins.  It is easy to query User table and get list of user_ids and then query the child record table for records that belong to those users.  But what if you need to combine data attributes from both tables?  This can also be a use case when querying mutliple databases or 3rd party APIs.  
 
 You can use Redis Hashes as a place to cache data needed as you are looping through records.  Warning - this is ALPHA quality software, be careful before running it in production.  
 
@@ -39,7 +39,7 @@ class ReportGen
     cache_records(records: comments)
     comment_ids = comments.pluck(:id)
     # =>
-    # => we also could have done  comments.pluck(:article_id)
+    # => you also could have done  comments.pluck(:article_id)
     article_ids = fetch_records_field(record_class: 'Comment', record_ids: comment_ids, field: 'article_id')
     articles = Article.in(id: article_ids).only(:title, :user_id)
     cache_records(records: articles)
@@ -47,7 +47,7 @@ class ReportGen
     user_ids = fetch_records_field(record_class: 'Article', record_ids: article_ids, field: 'user_id')
     users = User.in(id: user_ids).only(:name)
     cache_records(records: users)
-    # => instead of using cached comments we could query DB again
+    # => instead of using cached comments you could query DB again
     cached_comments = fetch_records(record_class: 'Comment', record_ids: comment_ids)
     cached_comments.each do |comment|
       article = fetch_records(record_class: 'Article', record_ids: [comment.article_id]).first
@@ -87,7 +87,7 @@ You can do `article.title` and `user = fetch_records(record_class: 'User', recor
 
 ### Querying 3rd party APIs
 
-When we query APIs (like [GitHub](https://api.github.com/users/dmitrypol)) we get back JSON.  We might want to correlate this with data from different APIs or internal DBs.  We can cache it in Redis while we are running the process and persist only what we need.  Since these records are not ActiveModels we need to specify the `record_class` which will be part of the Redis key to ensure uniqueness.  
+When you query APIs (like [GitHub](https://api.github.com/users/dmitrypol)) you get back JSON.  You might want to correlate this with data from different APIs or internal DBs.  You can cache it in Redis while you are running the process and persist only what you need.  Since these records are not ActiveModels you need to specify the `record_class` which will be part of the Redis key to ensure uniqueness.  
 
 ```ruby
 class DataDownloader
@@ -107,19 +107,19 @@ end
 
 When you delete such records you need `delete_records(records: users, record_class: 'User')`.  
 
-### Deleting data in Redis
+### Other config options
 
-It is best to call 'delete_records` after you are done with data processing.  By default all data cached in Redis will expire in 1 week.  Set `REDIS_APP_JOIN_TTL = 1.day` to modify this behavior.  Or set `REDIS_APP_JOIN_TTL = -1` to not have records expired.  
+If you do not call 'delete_records` after you are done all data cached in Redis will expire in 1 week.  Set `REDIS_APP_JOIN_TTL = 1.day` to modify this behavior.  Or set `REDIS_APP_JOIN_TTL = -1` to not expire records.
+
+The gem uses [Redis pipelining](http://redis.io/topics/pipelining) in default batches of 100.  To change that set `REDIS_APP_JOIN_BATCH = 1000` in your initializer.
 
 ### TODO:
 
 more tests, integrate with CI tool
 
-Use Redis pipelining in batches of 100
-
 Support non-string fields.  For example, if your DB supports array fields you cannot store those attributes in Redis hash values.  
 
-Methods to fetch associated records so we can do `article.user.name` from Redis cache.
+Methods to fetch associated records so you can do `article.user.name` from Redis cache.
 
 ## Development
 

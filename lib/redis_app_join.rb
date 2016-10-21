@@ -8,6 +8,8 @@ module RedisAppJoin
 
   # => default of 1 week
   REDIS_APP_JOIN_TTL = 60*60*24*7
+  # => default batch size for Redis pipelining when caching records
+  REDIS_APP_JOIN_BATCH = 100
 
   # will loop through records creating keys using combination of class and ID.
   # can combine different record types (Users and Articles) in the same method call unless passing hashes
@@ -18,15 +20,19 @@ module RedisAppJoin
   # @param record_class [String] name of class, used when records are NOT ActiveModel
   # @raise [RuntimeError] if record is missing ID
   def cache_records(records:, record_class: nil)
-    records.each do |record|
-      key = get_key_for_record(record: record, record_class: record_class)
-      if record.is_a?(Hash)
-        data = record
-      else
-        data = record.attributes
+    records.each_slice(REDIS_APP_JOIN_BATCH) do |batch|
+      REDIS_APP_JOIN.pipelined do
+        batch.each do |record|
+          key = get_key_for_record(record: record, record_class: record_class)
+          if record.is_a?(Hash)
+            data = record
+          else
+            data = record.attributes
+          end
+          REDIS_APP_JOIN.mapped_hmset(key, data.except(:_id, :id))
+          REDIS_APP_JOIN.expire(key, REDIS_APP_JOIN_TTL) unless REDIS_APP_JOIN_TTL == -1
+        end
       end
-      REDIS_APP_JOIN.mapped_hmset(key, data.except(:_id, :id))
-      REDIS_APP_JOIN.expire(key, REDIS_APP_JOIN_TTL) unless REDIS_APP_JOIN_TTL == -1
     end
   end
 
