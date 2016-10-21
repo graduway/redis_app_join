@@ -87,11 +87,11 @@ You can do `article.title` and `user = fetch_records(record_class: 'User', recor
 
 ### TODO:
 
-Write tests
-
-Default TTL of 1.week
+more tests, integrate with CI tool
 
 Support JSON structures in caching (getting data from API), not just ActiveModels
+
+Use Redis pipelining in batches of 100
 
 Support non-string fields.  For example, if your DB supports array fields you cannot store those attributes in Redis hash values.  
 
