@@ -26,7 +26,7 @@ module RedisAppJoin
         data = record.attributes
       end
       REDIS_APP_JOIN.mapped_hmset(key, data.except(:_id, :id))
-      REDIS_APP_JOIN.expire(key, REDIS_APP_JOIN_TTL)
+      REDIS_APP_JOIN.expire(key, REDIS_APP_JOIN_TTL) unless REDIS_APP_JOIN_TTL == -1
     end
   end
 

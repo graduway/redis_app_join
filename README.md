@@ -22,14 +22,14 @@ Or install it yourself as:
 
 ## Usage
 
-Create config/initializers/redis_app_join.rb or place this in environment specific config file.  You can use a different namespace, DB, driver, etc.  
+Create `config/initializers/redis_app_join.rb` or place this in environment specific config file.  You can use a different namespace, DB, driver, etc.  
 
 ```ruby
 redis_conn = Redis.new(host: 'localhost', port: 6379, db: 0)
 REDIS_APP_JOIN = Redis::Namespace.new(:appjoin, redis: redis_conn)
 ```
 
-In the Ruby class where you need to implement application-side join add `include RedisAppJoin`.  Here is a sample report generator that will produce a report of comments created since yesterday and include associated article title and name of user who wrote the article.
+In the Ruby class where you need to implement application-side join add `include RedisAppJoin`.  Here is a sample report generator that will query DB to produce a report of comments created since yesterday and include associated article title and name of user who wrote the article.
 
 ```ruby
 class ReportGen
@@ -85,11 +85,35 @@ Comment, Article and User records will be returned like this.
 
 You can do `article.title` and `user = fetch_records(record_class: 'User', record_ids: [article.user_id]).first`.
 
+### Querying 3rd party APIs
+
+When we query APIs (like [GitHub](https://api.github.com/users/dmitrypol)) we get back JSON.  We might want to correlate this with data from different APIs or internal DBs.  We can cache it in Redis while we are running the process and persist only what we need.  Since these records are not ActiveModels we need to specify the `record_class` which will be part of the Redis key to ensure uniqueness.  
+
+```ruby
+class DataDownloader
+  include RedisAppJoin
+  def perform
+    profiles = User.where(...).only(:profile).pluck(:profile)
+    profiles.each do |p|
+      url = "https://api.github.com/users/#{p}"
+      data = HTTP.get(url).slice(:name, :bio, :location)
+      cache_records(records: data, record_class: 'Github')
+    end
+  end
+end
+# => here is my profile https://api.github.com/users/dmitrypol
+{"db":0,"key":"appjoin:Github:210308","ttl":-1,"type":"hash","value":{"name":"Dmitry Polyakovsky","bio":"...","location":"..."}}
+```
+
+When you delete such records you need `delete_records(records: users, record_class: 'User')`.  
+
+### Deleting data in Redis
+
+It is best to call 'delete_records` after you are done with data processing.  By default all data cached in Redis will expire in 1 week.  Set `REDIS_APP_JOIN_TTL = 1.day` to modify this behavior.  Or set `REDIS_APP_JOIN_TTL = -1` to not have records expired.  
+
 ### TODO:
 
 more tests, integrate with CI tool
-
-Support JSON structures in caching (getting data from API), not just ActiveModels
 
 Use Redis pipelining in batches of 100
 

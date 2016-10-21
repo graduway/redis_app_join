@@ -108,4 +108,12 @@ describe RedisAppJoin do
     end
   end
 
+  xit 'hit Github API' do
+    data = Net::HTTP.get('https://api.github.com', '/users/dmitrypol')
+    data = data.slice(:name, :bio, :location)
+    cache_records(records: [data], record_class: 'Github')
+    expect(REDIS_APP_JOIN.dbsize).to eq 1
+    test = fetch_records(record_class: 'Github', record_ids: [210308])
+  end
+
 end
