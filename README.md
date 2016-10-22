@@ -1,5 +1,10 @@
 # RedisAppJoin
 
+[![Build Status](https://secure.travis-ci.org/dmitrypol/redis_app_join.svg?branch=master)](https://travis-ci.org/dmitrypol/redis_app_join)
+[![Code Climate](https://codeclimate.com/github/dmitrypol/redis_app_join.svg)](https://codeclimate.com/github/dmitrypol/redis_app_join)
+[![Inline docs](http://inch-ci.org/github/dmitrypol/redis_app_join.svg?branch=master)](http://inch-ci.org/github/dmitrypol/redis_app_join)
+[![Gem Version](https://badge.fury.io/rb/redis_app_join.svg)](http://badge.fury.io/rb/redis_app_join)
+
 Sometimes you need to implement application level joins.  It is easy to query User table and get list of user_ids and then query the child record table for records that belong to those users.  But what if you need to combine data attributes from both tables?  This can also be a use case when querying mutliple databases or 3rd party APIs.  
 
 You can use Redis Hashes as a place to cache data needed as you are looping through records.  Warning - this is ALPHA quality software, be careful before running it in production.  
@@ -115,7 +120,7 @@ The gem uses [Redis pipelining](http://redis.io/topics/pipelining) in default ba
 
 ### TODO:
 
-more tests, integrate with CI tool
+more tests
 
 Support non-string fields.  For example, if your DB supports array fields you cannot store those attributes in Redis hash values.  
 
