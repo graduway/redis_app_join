@@ -23,7 +23,7 @@ GEM
     i18n (0.7.0)
     minitest (5.9.1)
     mock_redis (0.17.0)
-    rake (10.5.0)
+    rake (13.0.1)
     readthis (1.5.0)
       connection_pool (~> 2.1)
       redis (~> 3.0)
@@ -58,7 +58,7 @@ DEPENDENCIES
   bundler (~> 1.12)
   byebug (>= 9.0.6)
   mock_redis (~> 0.17, >= 0.17.0)
-  rake (~> 10.0)
+  rake (~> 13.0)
   redis_app_join!
   rspec (~> 3.0)
   rspec-activemodel-mocks (>= 1.0.3)
